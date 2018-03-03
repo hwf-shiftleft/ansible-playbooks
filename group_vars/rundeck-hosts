@@ -1,0 +1,5 @@
+rundeck_api_tokens:
+  - user: servicenow
+    token: 1l2lo23no2mfoh23o4uyj013103jop34j0jef0
+rundeck_allow_api_full_perms: true
+rundeck_login_module: basic

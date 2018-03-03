@@ -1,0 +1,98 @@
+---
+# tasks file for service-now-api
+- name: Set up filter string
+  set_fact:
+    sn_filter_string: ""
+    sn_display_value: ""
+    sn_sys_ids: []
+  tags:
+    - read
+    - update
+    - delete
+- name: Set up filter string
+  set_fact:
+    sn_filter_string: "{{ sn_filter_string }}&{{ item.key|urlencode }}={{ item.value|urlencode }}"
+  with_dict: "{{ service_now_api_filter }}"
+  when: service_now_api_filter is defined
+  tags:
+    - read
+    - update
+    - delete
+
+- name: Set up to display results if sysparm_display_value is true
+  set_fact:
+    sn_display_value: "&sysparm_display_value=true"
+  when: service_now_api_sysparm_display_value
+  tags:
+    - read
+    - update
+    - delete
+ 
+
+- name: Try to locate record in question
+  uri:
+    url: "{{ service_now_api_base_url }}/api/now/table/incident?sysparm_limit={{ service_now_api_sysparm_limit }}{{ sn_display_value }}{{ sn_filter_string }}"
+    user: "{{ service_now_api_user }}"
+    password: "{{ service_now_api_pass }}"
+    return_content: yes
+  register: sn_get_record
+  tags:
+    - read
+    - update
+    - delete
+
+- debug: var=sn_get_record
+  tags: debug
+
+- name: Fail if we did not find any records to match the term
+  fail: msg="We did not find any records that matched {{ service_now_api_filter }}"
+  when: sn_get_record.x_total_count|int < 1
+  tags:
+    - read
+    - update
+    - delete
+
+- name: Create list of sys_ids to update
+  set_fact:
+    sn_sys_ids: "{{ sn_sys_ids + [item.sys_id] }}"
+  with_items: "{{ sn_get_record.json.result }}"
+  tags:
+    - read
+    - update
+    - delete
+
+- name: Update the record
+  uri:
+    url: "{{ service_now_api_base_url }}/api/now/table/incident/{{ item }}"
+    user: "{{ service_now_api_user }}"
+    password: "{{ service_now_api_pass }}"
+    body: "{{ service_now_api_body | to_json }}"
+    body_format: json
+    method: PUT
+    return_content: yes
+  with_items: "{{ sn_sys_ids }}"
+  register: sn_update_record
+  tags:
+    - update
+
+- name: Create a record
+  uri:
+    url: "{{ service_now_api_base_url }}/api/now/table/incident"
+    user: "{{ service_now_api_user }}"
+    password: "{{ service_now_api_pass }}"
+    body: "{{ service_now_api_body | to_json }}"
+    body_format: json
+    status_code: 201
+    method: POST
+    return_content: yes
+  register: sn_create_record
+  tags:
+    - create
+
+- debug: var=sn_create_record
+  tags: debug
+
+- name: fail if a sys_id was not created
+  fail: msg="Creation of record failed.  Please see logs for more information"
+  when: sn_create_record.json.result.sys_id is not defined
+  tags: create

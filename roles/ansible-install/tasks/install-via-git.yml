@@ -1,0 +1,76 @@
+---
+# tasks file for ansible-install/install-via-git
+#
+- name: Install prequisites
+  yum: name={{ item }} state=latest
+  with_items:
+    - git
+    - python-pip
+    - python-paramiko
+    - python-jinja2
+    - python-httplib2
+    - python-six
+    - PyYAML
+    - python-virtualenv
+    - sshpass
+  tags:
+    - install
+    - update
+- name: Install dev prerequisites (if needed)
+  yum: name={{ item }} state=latest
+  with_items:
+    - gcc
+    - openssl-devel
+    - python-devel
+    - libffi-devel
+  when: ansible_role_install_type == 'dev'
+  tags:
+    - install
+    - update
+
+
+- name: Ensure ansible directory exists
+  file:
+    path: "{{ ansible_install_git_dir }}"
+    state: directory
+  tags:
+    - install
+    - update
+
+- name: Pull latest ansible from git 
+  git:
+    repo: git://github.com/ansible/ansible.git
+    dest: "{{ ansible_install_git_dir }}"
+    recursive: yes
+    update: yes
+  tags:
+    - install
+    - update
+
+- name: Setup virtual environment
+  command: virtualenv {{ ansible_install_venv_name }}
+  args:
+    chdir: "{{ ansible_install_git_dir }}"
+    creates: "{{ ansible_install_git_dir }}/{{ansible_install_venv_name }}"
+  when: ansible_role_install_type == 'dev'
+  tags:
+    - install
+    - update
+- name: Install virtual env requirements
+  shell: ". {{ ansible_install_venv_name }}/bin/activate && pip install --upgrade setuptools &&  pip install -r requirements.txt"
+  args:
+    chdir: "{{ ansible_install_git_dir }}"
+  when: ansible_role_install_type == 'dev'
+  tags:
+    - install
+    - update
+
+- name: Set up profile locations
+  template:
+    src: ansible-profile.sh.j2
+    dest: "{{ item }}"
+    owner: root
+    mode: 0755
+  with_items: "{{ ansible_install_git_add_profile_locations }}"
+  when: ansible_install_git_add_profile
+    

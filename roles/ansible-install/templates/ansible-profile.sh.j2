@@ -1,0 +1,6 @@
+#!/bin/bash
+PATH={{ ansible_install_git_dir }}/bin:$PATH
+{% if ansible_role_install_type == 'dev' %}
+. {{ ansible_install_git_dir }}/{{ ansible_install_venv_name }}/bin/activate
+{% endif %}
+

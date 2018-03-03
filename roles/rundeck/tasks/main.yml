@@ -1,0 +1,211 @@
+---
+# tasks file for rundeck
+ - name: Include OS specific variables
+   include_vars: "{{ item }}"
+   with_first_found:
+     - "vars/{{ ansible_distribution }}-{{ansible_distribution_major_version }}.yml"
+     - "vars/{{ ansible_distribution }}.yml"
+     - "{{ ansible_os_family }}.yml"
+     - "vars/default.yml"
+   tags: always
+
+ - name: Shut down sevices For Upgrade or removal
+   service: 
+      name: "{{item}}" 
+      state: stopped 
+   ignore_errors: yes
+   with_items:
+     - rundeckd
+   tags:
+     - update
+     - remove
+
+ - name: remove old java
+   yum: name={{item}} state=absent
+   with_items:
+     - java-1.6.0-openjdk
+     - java-1.7.0-openjdk
+   tags: install
+
+ - name: Install dependencies
+   yum: name={{item}} state=latest
+   with_items:
+     - java-1.8.0-openjdk
+     - python-paramiko
+     - libselinux-python
+   tags: install
+
+ - name: Install rundeck pro
+   yum:
+     name: "{{ rundeck_pro_url }}"
+     state: present
+   when: rundeck_use_pro
+   tags:
+     - install
+     - update
+
+ - name: Install latest repo for rundeck OSS
+   #command: rpm -Uvh http://repo.rundeck.org/latest.rpm
+   yum: name=http://repo.rundeck.org/latest.rpm
+   ignore_errors: true
+   when: not rundeck_use_pro
+   tags: 
+     - install
+     - update
+
+ - name: Remove Rundeck repo
+   yum: 
+    name: rundeck-repo
+   tags:
+     - remove
+
+ - name: Install packages for rundeck OSS
+   yum: 
+     name: "{{item}}"
+     state: latest
+   when: not rundeck_use_pro
+   with_items:
+     - rundeck
+     - rundeck-config
+     - rundeck-cli
+   tags:
+     - install
+     - update
+
+ - name: Install supporting packages for certain jobs (yum installs)
+   yum: 
+     name: "{{item}}" 
+     state: latest
+   with_items: "{{ rundeck_supporting_packages }}"
+   tags: 
+     - install
+     - update
+
+ - name: Remove all packages
+   yum:
+     name: "{{item}}"
+     state: absent
+   with_items:
+     - rundeck
+     - rundeck-config
+     - python-oauth
+     - python-pip
+     - python-crypto2.1
+   tags:
+     - remove
+
+ - name: Install supporting packages for certain jobs (pip installs)
+   command: pip --no-input install {{item}}
+   with_items:
+     - gspread
+     - pyapi-gitlab
+     - oauth2client
+   tags:
+     - install
+     - update
+
+ - name: Remove suppporting pip packages
+   command: pip --no-input uninstall {{item}}
+   ignore_errors: yes
+   with_items:
+     - gspread
+     - pyapi-gitlab
+     - oauth2client
+   tags:
+     - remove
+
+ - name: Copy in gitconfig file for rundeck user
+   copy: src=gitconfig dest={{ rundeck_base_dir }}/.gitconfig owner=rundeck group=rundeck mode=0664
+   tags: 
+    - install
+    - config
+
+ - name: Copy in templated files for property files 
+   template: 
+     src: "{{ item }}"
+     dest: "{{ rundeck_config_dir }}/{{ item }}"
+     owner: "{{localuser}}"
+     group: "{{localgroup}}"
+     mode: 0644
+     force: yes
+   with_items:
+     - realm.properties 
+     - rundeck-config.properties
+   tags:
+     - install
+     - config
+     - update
+     - propfiles
+   notify:
+     - restart rundeck
+
+ - name: Copy in auth support file
+   template: src=jaas-{{ rundeck_login_module }}.conf dest={{ rundeck_config_dir }}/jaas-{{ rundeck_login_module }}.conf owner={{localuser}} group={{localgroup}} mode=0644 force=yes
+   tags:
+     - install
+     - config
+     - update
+   notify:
+     - restart rundeck
+#
+# - name: Copy in aclpolicy file
+#   copy: src={{hostpath}}/admin.aclpolicy dest={{ rundeck_config_dir }}/admin.aclpolicy owner={{localuser}} group={{localgroup}} mode=0644 force=yes
+#   tags:
+#     - install
+#     - config
+#     - update
+#     - aclpolicy
+#
+# - name: Copy in framework.properties file
+#   template: src=framework.properties dest={{ rundeck_config_dir }}/framework.properties owner={{localuser}} group={{localgroup}} mode=0644 force=yes
+#   tags:
+#     - install
+#     - config
+#     - update
+#   notify:
+#     - restart rundeck
+ 
+ - name: Copy in sysconfig variable file 
+   template: 
+     src: "rundeck-sysconfig.j2"
+     dest: "/etc/sysconfig/rundeckd"
+     owner: "{{localuser}}"
+     group: "{{localgroup}}"
+     mode: 0644
+     force: yes
+   tags:
+     - install
+     - config
+     - update
+   notify:
+     - restart rundeck
+
+ - name: Copy in templated files for API token configuration
+   template: 
+     src: "{{ item }}"
+     dest: "{{ rundeck_config_dir }}/{{ item }}"
+     owner: "{{localuser}}"
+     group: "{{localgroup}}"
+     mode: 0644
+     force: yes
+   with_items:
+     - tokens.properties
+     - apitoken.aclpolicy 
+   when: rundeck_api_tokens is defined
+   tags:
+     - install
+     - config
+     - update
+   notify:
+     - restart rundeck
+
+ - name: Check that the machine can allow for apache proxying of rundeck port
+   shell: semanage port -l | egrep "^http_port_t" | egrep "\b{{rundeck_http_port}}\b"
+   register: selinuxhttpport
+   always_run: yes
+   changed_when: False
+   ignore_errors: True
+
+ - name: Configure SELinux to allow apache proxying of rundeck port
+   command: semanage port -a -t http_port_t -p tcp {{rundeck_http_port}}
+   when: selinuxhttpport.stdout.find("{{rundeck_http_port}}") == -1

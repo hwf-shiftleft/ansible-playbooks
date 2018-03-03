@@ -1,0 +1,43 @@
+---
+# defaults file for rundeck
+localuser: rundeck
+localgroup: rundeck
+rundeck_config_dir: /etc/rundeck
+rundeck_base_dir: /var/lib/rundeck
+rundeck_tmp_dir: /tmp/rundeck/
+rundeck_jvm_settings: " -Xmx2g -Xms256m -XX:MaxPermSize=256m -server"
+rundeck_login_module: MultiAuth 
+rundeck_allow_api_full_perms: false
+rundeck_use_pro: false
+rundeck_pro_ver: 2.2.0
+rundeck_pro_url: "https://rundeckpro.bintray.com/rpm/rundeckpro-team-{{ rundeck_pro_ver }}-GA.noarch.rpm"
+
+# Realm properties settings
+rundeck_realm_users:
+  - username: admin
+    password: 'OBF:changeme'
+    groups: user,admin,architect,deploy,build
+rundeck_framework_user: admin 
+rundeck_framework_password: admin 
+
+# url_port is the port that the server will show up on. 443 is std HTTPS
+rundeck_http_port: 4440
+rundeck_https_port: 4443
+
+# rundeck_user is the default user to connect to remote hosts as
+rundeck_user: acduser
+
+rundeck_base_role: user
+# Was level 2 group: umms-rundeck-users
+
+# ldap settings
+ldap_provider: ldap.ent.med.umich.edu
+basedn: "ou=people,dc=med,dc=umich,dc=edu"
+uidattrib: uid
+groupdn: "dc=med,dc=umich,dc=edu"
+
+
+rundeck_grails_url: https://{{ansible_nodename}}
+rundeck_datasource_url: jdbc:h2:file:/var/lib/rundeck/data/rundeckdb;MVCC=true
+rundeck_gui_startpage: jobs
+

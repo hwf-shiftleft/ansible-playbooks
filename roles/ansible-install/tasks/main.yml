@@ -1,0 +1,18 @@
+---
+# tasks file for ansible-install
+- name: Install ansible via yum 
+  yum: name={{item}} state=latest
+  when: ansible_role_install_type == 'package'
+  with_items:
+    - ansible
+  tags: install
+
+- name: Install ansible via pip
+  include: install-via-pip.yml
+  when: ansible_role_install_type == 'pip'
+  tags: install
+
+- name: Install ansible via git
+  include: install-via-git.yml
+  when: ansible_role_install_type in ['git','dev']
+  tags: install

@@ -1,0 +1,8 @@
+---
+# vars file for rundeck
+#
+rundeck_supporting_packages:
+  - python-oauth
+  - python-oauthlib
+  - python-pip
+  - python-crypto

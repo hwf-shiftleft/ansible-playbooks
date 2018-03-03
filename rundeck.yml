@@ -1,0 +1,22 @@
+---
+# Install rundeck and upgrade as needed
+
+- hosts: rundeck-hosts
+  become: yes
+
+  vars:
+  - hostpath: "{{host_files}}/{{inventory_hostname}}"
+  pre_tasks:
+  - name: Install prerequisites
+    yum:
+      name: "{{ item }}"
+      state: latest
+    with_items:
+    - git
+    - vim
+    tags:
+      - install
+
+  roles:
+#  - {role: rundeck}
+  - {role: ansible-install}

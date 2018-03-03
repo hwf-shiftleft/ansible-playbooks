@@ -1,0 +1,27 @@
+---
+# defaults file for service-now-api
+service_now_api_base_url: "https://dev17675.service-now.com"
+#service_now_api_base_url: "https://ummeddev.service-now.com"
+#service_now_api_base_url: "https://ummedtest.service-now.com"
+service_now_api_user: admin
+service_now_api_table: incident
+service_now_api_sysparm_limit: 1
+service_now_api_sysparm_display_value: false
+
+# FIXME: For testing, remove before prod
+service_now_api_body:
+  assignment_group: Linux Hosting Services
+  category: Service Request
+  subcategory: Other
+  business_service: Other
+  cmdb_ci: Rundeck
+  short_description: "TEST12345"
+  caller_id: John Walsh
+  description: " Fix this up right now\nI've got work to do"
+  comments: " Fix this up right now\nI've got work to do"
+  contact_type: Automation
+  priority: 5
+  urgency: 5
+  impact: 5 
+#service_now_api_filter:
+#  number: INC0012560

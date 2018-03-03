@@ -1,0 +1,9 @@
+RDECK_INSTALL="${RDECK_INSTALL:-{{ rundeck_base_dir }}}"
+RDECK_BASE="${RDECK_BASE:-{{rundeck_base_dir}}}"
+RDECK_CONFIG="${RDECK_CONFIG:-{{ rundeck_config_dir }}}"
+RUNDECK_TEMPDIR="${RUNDECK_TEMPDIR:-{{ rundeck_tmp_dir }}}"
+RDECK_JVM_SETTINGS="${RDECK_JVM_SETTINGS:-{{ rundeck_jvm_settings }}}"
+JAAS_CONF="${JAAS_CONF:-$RDECK_CONFIG/jaas-{{ rundeck_login_module }}.conf}"
+LOGIN_MODULE="${LOGIN_MODULE:-{{ rundeck_login_module }}}"
+RDECK_HTTP_PORT=${RDECK_HTTP_PORT:-{{ rundeck_http_port }}}
+RDECK_HTTPS_PORT=${RDECK_HTTPS_PORT:-{{ rundeck_https_port }}}

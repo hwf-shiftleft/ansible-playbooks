@@ -1,0 +1,9 @@
+---
+# defaults file for ansible
+
+ansible_role_install_type: package 
+ansible_install_git_dir: /opt/apps/ansible
+ansible_install_venv_name: devel
+ansible_install_git_add_profile: false
+ansible_install_git_add_profile_locations:
+  - /etc/profile.d/ansible-setup.sh

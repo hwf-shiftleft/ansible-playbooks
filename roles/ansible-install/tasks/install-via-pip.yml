@@ -1,0 +1,22 @@
+---
+# tasks file for ansible/install-via-pip
+#
+- name: Install prequisites
+  yum: name={{ item }} state=latest
+  with_items:
+    - python-pip
+    - python-virtualenv
+    - libffi-devel 
+    - gcc
+    - openssl-devel
+    - sshpass
+  tags:
+    - install
+    - update
+- name: Install ansible with pip
+  pip:
+    name: ansible
+    state: latest
+  tags:
+    - install
+    - update
